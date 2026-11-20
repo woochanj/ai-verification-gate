@@ -7,6 +7,8 @@ on:
   schedule:
     - cron: '0 0 * * 1' # 매주 월요일 09:00 KST 정기 리그레션
   workflow_dispatch:
+    inputs:
+      reset_history: { description: '판정 이력을 비우고 이번 실행부터 다시 쌓기', type: boolean, default: false }
 
 permissions:
   contents: read
@@ -42,6 +44,7 @@ jobs:
         continue-on-error: true # 판정은 게이트가 내린다
 
       - name: 이전 판정 이력 받기
+        if: ${{ !inputs.reset_history }}
         run: |
           mkdir -p out/site
           curl -sf "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/history.json" -o out/site/history.json || true
