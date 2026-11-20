@@ -1,0 +1,59 @@
+name: verification-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1' # 매주 월요일 09:00 KST 정기 리그레션
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/gate-selfcheck.mjs
+
+      - name: 기준 판정 실행
+        run: npx playwright test
+        continue-on-error: true # 판정은 게이트가 내린다
+
+      - name: 이전 판정 이력 받기
+        run: |
+          mkdir -p out/site
+          curl -sf "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/history.json" -o out/site/history.json || true
+
+      - name: 배포 게이트
+        id: gate
+        run: node scripts/gate.mjs > /dev/null; s=$?; cat out/summary.md >> "$GITHUB_STEP_SUMMARY"; exit $s
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verdicts
+          path: |
+            out/
+            test-results/
+
+      - uses: actions/upload-pages-artifact@v3
+        if: always() && github.ref == 'refs/heads/main'
+        with: { path: out/site }
+
+  pages:
+    needs: gate
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: '${{ steps.deploy.outputs.page_url }}' }
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

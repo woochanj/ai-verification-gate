@@ -1,0 +1,59 @@
+# 검증 기준: 요구사항·화면·API에서 "무엇이 통과이고 무엇이 실패인지"를 정의한다.
+# 테스트는 이 기준을 그대로 옮긴다. 기준에 없는 것은 검증하지 않고, 기준에 있는 것은 빠뜨리지 않는다.
+# severity: blocker가 실패하거나 미검증이면 No-Go. major·minor 실패는 위험으로 기록하고 배포는 막지 않는다.
+target: Toolshop (https://practicesoftwaretesting.com)
+criteria:
+  - id: C-API-01
+    source: API
+    title: 상품 목록 API가 가격이 있는 상품을 돌려준다
+    pass: GET /products 응답이 200이고, data의 모든 상품에 id·name이 있고 price가 0보다 크다
+    fail: 200이 아니거나, id·name이 없거나, price가 0 이하인 상품이 하나라도 있다
+    severity: blocker
+  - id: C-API-02
+    source: API
+    title: 검색 API는 검색어가 이름에 들어간 상품만 돌려준다
+    pass: GET /products/search?q=pliers 결과가 1건 이상이고, 모든 상품 이름에 pliers가 들어 있다(대소문자 무시)
+    fail: 결과가 0건이거나, 이름에 pliers가 없는 상품이 섞여 있다
+    severity: major
+  - id: C-API-03
+    source: API
+    title: 없는 상품 조회는 404를 돌려준다
+    pass: GET /products/{존재하지 않는 id} 응답이 404다
+    fail: 404가 아니다(200·500 등)
+    severity: major
+  - id: C-UI-01
+    source: 화면+API
+    title: 화면 검색 결과가 검색 API 결과와 같다
+    pass: 화면에서 pliers를 검색한 결과의 상품 이름 집합이 검색 API 결과의 이름 집합과 같다
+    fail: 화면에만 있거나 API에만 있는 상품이 있다
+    severity: major
+  - id: C-UI-02
+    source: 화면+API
+    title: 목록 화면 가격이 API 가격과 같다
+    pass: 첫 페이지 상품 카드마다 화면 가격이 같은 id의 API price와 같다
+    fail: 가격이 다른 상품이 하나라도 있다
+    severity: blocker
+  - id: C-UI-03
+    source: 화면+API
+    title: 상세 화면 가격이 API 가격과 같다
+    pass: 재고 있는 첫 상품의 상세 화면 단가가 API price와 같다
+    fail: 단가가 다르다
+    severity: blocker
+  - id: C-UI-04
+    source: 화면
+    title: 장바구니에 담은 수량과 금액이 맞다
+    pass: 상세 화면에서 1개 담으면 장바구니 배지가 1이고, 장바구니 줄 금액과 합계가 단가와 같다
+    fail: 배지 수량, 줄 금액, 합계 중 하나라도 다르다
+    severity: blocker
+  - id: C-UI-05
+    source: 화면+API
+    title: 품절 상품은 장바구니에 담을 수 없다
+    pass: API에서 in_stock=false인 상품의 상세 화면에 품절 표시가 있고 장바구니 버튼이 비활성이다
+    fail: 품절 표시가 없거나 장바구니 버튼을 누를 수 있다
+    severity: blocker
+  - id: C-UI-06
+    source: 화면
+    title: 가격 낮은 순 정렬이 맞다
+    pass: 정렬을 Price (Low - High)로 바꾸면 첫 페이지 가격이 낮은 가격부터 이어진다
+    fail: 앞 상품보다 싼 상품이 뒤에 나온다
+    severity: minor

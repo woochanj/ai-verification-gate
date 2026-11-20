@@ -1,0 +1,19 @@
+{
+  "name": "ai-verification-gate",
+  "version": "1.0.0",
+  "description": "검증 기준 → AI 에이전트 테스트 → 판정 근거 기록 → 배포 게이트",
+  "scripts": {
+    "test": "playwright test",
+    "gate": "node scripts/gate.mjs",
+    "verify": "playwright test; node scripts/gate.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.1"
+  }
+}
