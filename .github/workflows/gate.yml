@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       reset_history: { description: '판정 이력을 비우고 이번 실행부터 다시 쌓기', type: boolean, default: false }
+      ai_model: { description: 'AI 판정 모델(비우면 기본값)', type: string, default: '' }
 
 permissions:
   contents: read
@@ -44,7 +45,7 @@ jobs:
         continue-on-error: true # 판정은 게이트가 내린다
 
       - name: AI 판정
-        env: { NVIDIA_API_KEY: '${{ secrets.NVIDIA_API_KEY }}' }
+        env: { NVIDIA_API_KEY: '${{ secrets.NVIDIA_API_KEY }}', AI_MODEL: '${{ inputs.ai_model }}' }
         run: node scripts/ai-judge.mjs
 
       - name: 이전 판정 이력 받기

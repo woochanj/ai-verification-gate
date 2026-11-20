@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { parse } from 'yaml';
 
 const KEY = process.env.NVIDIA_API_KEY;
-const MODEL = process.env.AI_MODEL ?? 'meta/llama-3.3-70b-instruct';
+const MODEL = process.env.AI_MODEL || 'mistralai/mistral-large-4-1t-a52b';
 const URL = process.env.AI_URL ?? 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 const criteria = new Map(fs.readdirSync('criteria').filter(f => f.endsWith('.yaml'))
@@ -23,7 +23,7 @@ async function judge(c, r) {
     method: 'POST',
     headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL, temperature: 0, max_tokens: 300,
+      model: MODEL, temperature: 0, max_tokens: 2000,
       messages: [
         { role: 'system', content: PROMPT },
         { role: 'user', content: JSON.stringify({ criterion: { id: c.id, title: c.title, pass: c.pass, fail: c.fail }, observed: { evidence: r.evidence, error: r.reason } }) },
@@ -31,7 +31,8 @@ async function judge(c, r) {
     }),
   });
   if (!res.ok) return { verdict: 'unknown', cause: null, reason: `AI 호출 실패 ${res.status}` };
-  const text = (await res.json()).choices[0].message.content;
+  // 추론형 모델은 <think>…</think>를 먼저 내보낸다. 판정 JSON은 그 뒤에 있다.
+  const text = ((await res.json()).choices[0].message.content ?? '').replace(/<think>[\s\S]*?<\/think>/g, '');
   try {
     return JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
   } catch {
