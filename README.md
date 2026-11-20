@@ -51,16 +51,25 @@ PR 요약 + 판정 이력 페이지(GitHub Pages)
 
 재시도는 0회입니다. 재시도로 통과한 테스트는 판정을 믿을 수 없게 만들기 때문입니다. 규칙은 [scripts/gate-selfcheck.mjs](scripts/gate-selfcheck.mjs)로 점검합니다.
 
-## 에이전트 규칙
+## 에이전트
 
-[.claude/skills/criteria-to-tests/SKILL.md](.claude/skills/criteria-to-tests/SKILL.md)에 AI 에이전트가 기준을 테스트로 옮길 때 지키는 규칙을 적었습니다.
+테스트를 쓰는 에이전트와 검토하는 에이전트를 나눴습니다. 쓴 쪽이 자기 결과를 검토하면 같은 착각을 반복하기 때문입니다.
+
+| 에이전트 | 하는 일 | 권한 |
+|---|---|---|
+| [test-writer](.claude/agents/test-writer.md) | 기준 하나를 테스트로 옮기고 실행해 결과를 보고 | 테스트 파일 작성·실행. 기준 파일 수정, 커밋 금지 |
+| [test-reviewer](.claude/agents/test-reviewer.md) | 테스트를 기준과 대조해 Missing / Extra / Wrong value / Hardcoded data / No evidence / Hidden failure를 보고 | 읽기 전용 |
+
+리뷰 지적을 보고 고칠지는 사람이 정하고, 사람이 커밋합니다.
+
+[.claude/skills/criteria-to-tests/SKILL.md](.claude/skills/criteria-to-tests/SKILL.md)에 기준을 테스트로 옮길 때 지키는 규칙을 적었습니다.
 
 - 기준의 통과 조건은 빠뜨리지 않고, 기준에 없는 검증은 더하지 않는다
 - 실제 화면을 Playwright MCP로 열어 확인한 뒤 쓴다
 - 막히면 실패로 남긴다. assertion을 주석 처리하거나 재시도로 통과시키지 않는다
 - 상품 id·가격을 테스트에 박지 않고 API에서 조건으로 고른다
 
-이 규칙들은 실무에서 여러 사람이 AI로 테스트 코드를 만들 때 결과가 제각각이 되고, 기대결과에 없는 검증이 섞여 엉뚱한 실패가 나던 문제를 겪으며 정한 것입니다.
+이 규칙과 에이전트 구성은 실무에서 쓰던 방식을 일반화한 것입니다. 실무에서는 TC 구현을 데이터 탐색, 이슈 트래커 조회, 테스트 작성, TC 대조 리뷰, 결과 기록, 결과 시트 반영의 6개 에이전트로 나눠 썼고, 여러 사람이 AI로 테스트를 만들 때 결과가 제각각이 되거나 기대결과에 없는 검증이 섞여 엉뚱한 실패가 나던 문제를 겪으며 규칙을 정했습니다.
 
 ## 실행
 
