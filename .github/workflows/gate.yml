@@ -43,6 +43,10 @@ jobs:
         run: npx playwright test
         continue-on-error: true # 판정은 게이트가 내린다
 
+      - name: AI 판정
+        env: { NVIDIA_API_KEY: '${{ secrets.NVIDIA_API_KEY }}' }
+        run: node scripts/ai-judge.mjs
+
       - name: 이전 판정 이력 받기
         if: ${{ !inputs.reset_history }}
         run: |

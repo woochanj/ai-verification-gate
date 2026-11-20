@@ -25,4 +25,8 @@ assert.equal(decide([v('C-A-01', 'pass'), v('C-A-02', 'fail')]), 'Go', 'minor �
 assert.equal(decide([v('C-A-01', 'fail'), v('C-A-02', 'pass')]), 'No-Go', 'blocker 실패는 배포를 막는다');
 assert.equal(decide([v('C-A-01', 'not-run'), v('C-A-02', 'pass')]), 'No-Go', 'blocker 미판정도 막는다');
 assert.equal(decide([v('C-A-02', 'pass')]), 'No-Go', 'blocker를 판정하는 테스트가 없으면 막는다');
+const ai = (id, verdict, aiVerdict) => ({ id, verdict, ai: { verdict: aiVerdict } });
+assert.equal(decide([ai('C-A-01', 'pass', 'fail'), v('C-A-02', 'pass')]), 'No-Go', 'blocker에서 코드와 AI 판정이 다르면 사람 검토 전까지 막는다');
+assert.equal(decide([ai('C-A-01', 'pass', 'unknown'), v('C-A-02', 'pass')]), 'Go', 'AI가 판단 불가면 코드 판정을 따른다');
+assert.equal(decide([v('C-A-01', 'pass'), ai('C-A-02', 'pass', 'fail')]), 'Go', 'minor 불일치는 위험으로만 기록');
 console.log('gate selfcheck ok');

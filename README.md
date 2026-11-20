@@ -12,7 +12,8 @@ tests/*.spec.ts        기준 1개 = 테스트 1개, 제목에 기준 id
    │  scripts/verdict-reporter.mjs       테스트 결과를 기준 단위 판정 + 근거로 기록
    ▼
 out/verdicts.json      판정과 근거(실제로 본 값, 실패 메시지, 스크린샷)
-   │  scripts/gate.mjs                   blocker 실패·미판정이면 No-Go
+   │  scripts/ai-judge.mjs               AI가 기준 문장과 근거만 보고 다시 판정, 실패 원인 분류
+   │  scripts/gate.mjs                   blocker 실패·미판정·코드와 AI 판정 불일치면 No-Go
    ▼
 PR 요약 + 판정 이력 페이지(GitHub Pages)
 ```
@@ -41,13 +42,24 @@ PR 요약 + 판정 이력 페이지(GitHub Pages)
   "evidence": { "product": "Long Nose Pliers", "label": "Out of stock", "buttonDisabled": true } }
 ```
 
+## AI 판정
+
+테스트 코드의 assertion이 내린 판정과 별개로, AI가 **기준 문장과 판정 근거만** 읽고 다시 판정합니다([scripts/ai-judge.mjs](scripts/ai-judge.mjs)). 실패면 원인을 제품 결함 / 테스트 문제 / 환경 문제로 나눕니다.
+
+- 둘이 같으면 그대로 진행합니다.
+- 둘이 다르면 "검토 필요"로 표시합니다. 테스트가 기준을 잘못 옮겼거나, 근거가 판정하기에 부족하다는 신호입니다.
+- AI가 판단할 수 없다고 하면 코드 판정을 따릅니다.
+
+모델은 NVIDIA API의 공개 모델을 씁니다(`AI_MODEL`로 변경). 키(`NVIDIA_API_KEY`)가 없으면 AI 판정은 건너뛰고 그 사실을 기록합니다.
+
 ## 게이트 규칙
 
 | 상황 | 판정 |
 |---|---|
 | blocker 기준 실패 | No-Go |
 | blocker 기준 미판정(skip) 또는 판정하는 테스트가 없음 | No-Go |
-| major·minor 기준 실패 | Go, 위험으로 기록 |
+| blocker 기준에서 코드 판정과 AI 판정이 다름 | No-Go, 사람이 근거를 보고 판정 |
+| major·minor 기준 실패 또는 판정 불일치 | Go, 위험으로 기록 |
 
 재시도는 0회입니다. 재시도로 통과한 테스트는 판정을 믿을 수 없게 만들기 때문입니다. 규칙은 [scripts/gate-selfcheck.mjs](scripts/gate-selfcheck.mjs)로 점검합니다.
 
