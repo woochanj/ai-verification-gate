@@ -1,6 +1,5 @@
 # Toolshop 공식 저장소의 docker-compose.prod.yml 사본 (testsmith-io/practice-software-testing@ae7caec).
 # CI에서 공개 사이트 대신 이 인스턴스를 검증한다. 공개 사이트는 CI 서버 접속에 봇 확인 화면을 띄운다.
-version: '2'
 services:
   laravel-api:
     image: testsmith/practice-software-testing-${SPRINT}-api
