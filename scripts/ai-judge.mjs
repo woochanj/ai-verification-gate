@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { parse } from 'yaml';
 
 const KEY = process.env.NVIDIA_API_KEY;
-const MODEL = process.env.AI_MODEL || 'mistralai/mistral-large-4-1t-a52b';
+const MODEL = process.env.AI_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
 const URL = process.env.AI_URL ?? 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 const criteria = new Map(fs.readdirSync('criteria').filter(f => f.endsWith('.yaml'))

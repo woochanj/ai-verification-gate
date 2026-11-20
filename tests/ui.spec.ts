@@ -43,12 +43,14 @@ test('[C-UI-04] 장바구니에 담은 수량과 금액이 맞다', async ({ pag
   await page.goto(`/product/${p.id}`);
   const unit = money(await page.getByTestId('unit-price').innerText());
   await page.getByTestId('add-to-cart').click();
-  await expect(page.getByTestId('cart-quantity')).toHaveText('1');
+  const badgeEl = page.getByTestId('cart-quantity');
+  await expect(badgeEl).toBeVisible();
+  const badge = (await badgeEl.innerText()).trim();
   await page.getByTestId('nav-cart').click();
   const line = money(await page.getByTestId('line-price').first().innerText());
   const total = money(await page.getByTestId('cart-total').innerText());
-  await evidence(info, { product: p.name, unit, line, total });
-  expect([line, total]).toEqual([unit, unit]);
+  await evidence(info, { product: p.name, unit, badge, line, total });
+  expect([badge, line, total]).toEqual(['1', unit, unit]);
 });
 
 test('[C-UI-05] 품절 상품은 장바구니에 담을 수 없다', async ({ page, request }, info) => {
