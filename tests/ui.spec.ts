@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { API, evidence, money } from './helpers';
+import { API, evidence, money, pickByStock } from './helpers';
 
 const products = async (request: APIRequestContext, path = '/products') =>
   (await (await request.get(`${API}${path}`)).json()).data;
@@ -17,7 +17,7 @@ test('[C-UI-01] 화면 검색 결과가 검색 API 결과와 같다', async ({ p
 });
 
 test('[C-UI-02] 목록 화면 가격이 API 가격과 같다', async ({ page, request }, info) => {
-  const api = new Map((await products(request)).map((p: any) => [p.id, p.price]));
+  const api = new Map((await products(request)).map((p: any) => [String(p.id), p.price])); // 화면 링크의 id는 문자열
   await page.goto('/');
   await expect(page.getByTestId('product-name').first()).toBeVisible();
   const cards = await page.locator('a.card').evaluateAll(as => as.map(a => ({
@@ -31,7 +31,7 @@ test('[C-UI-02] 목록 화면 가격이 API 가격과 같다', async ({ page, re
 });
 
 test('[C-UI-03] 상세 화면 가격이 API 가격과 같다', async ({ page, request }, info) => {
-  const p = (await products(request)).find((x: any) => x.in_stock);
+  const p = pickByStock((await products(request)), true);
   await page.goto(`/product/${p.id}`);
   const ui = money(await page.getByTestId('unit-price').innerText());
   await evidence(info, { id: p.id, name: p.name, ui, api: p.price });
@@ -39,7 +39,7 @@ test('[C-UI-03] 상세 화면 가격이 API 가격과 같다', async ({ page, re
 });
 
 test('[C-UI-04] 장바구니에 담은 수량과 금액이 맞다', async ({ page, request }, info) => {
-  const p = (await products(request)).find((x: any) => x.in_stock);
+  const p = pickByStock((await products(request)), true);
   await page.goto(`/product/${p.id}`);
   const unit = money(await page.getByTestId('unit-price').innerText());
   await page.getByTestId('add-to-cart').click();
@@ -54,7 +54,7 @@ test('[C-UI-04] 장바구니에 담은 수량과 금액이 맞다', async ({ pag
 });
 
 test('[C-UI-05] 품절 상품은 장바구니에 담을 수 없다', async ({ page, request }, info) => {
-  const p = (await products(request)).find((x: any) => !x.in_stock);
+  const p = pickByStock((await products(request)), false);
   test.skip(!p, '첫 페이지에 품절 상품이 없어 판정할 대상이 없다');
   await page.goto(`/product/${p.id}`);
   const label = page.getByTestId('out-of-stock');

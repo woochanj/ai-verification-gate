@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import { API, evidence, money } from './helpers';
+import { API, evidence, money, pickByStock } from './helpers';
 
 // 로그인·주문은 Docker로 띄운 Toolshop(npm run toolshop:up)에서만 한다. 공개 사이트에는 주문을 만들지 않는다.
 // 계정은 Toolshop 공식 저장소의 테스트용 시드 계정이다.
@@ -28,7 +28,9 @@ const cartRows = (page: Page) => page.locator('tbody tr').evaluateAll(trs => trs
 })));
 
 test('[C-FLOW-01] 로그인 고객의 주문 금액이 장바구니와 송장에서 같다', async ({ page, request }, info) => {
-  const [a, b] = (await products(request)).filter((p: any) => p.in_stock);
+  const catalog = await products(request);
+  pickByStock(catalog, true); // in_stock 필드 확인
+  const [a, b] = catalog.filter((p: any) => p.in_stock);
   await page.goto('/auth/login');
   await page.getByTestId('email').fill(USER);
   await page.getByTestId('password').fill(PASSWORD);
@@ -73,7 +75,7 @@ test('[C-FLOW-01] 로그인 고객의 주문 금액이 장바구니와 송장에
 });
 
 test('[C-I18N-01] 언어를 바꿔도 장바구니 금액과 수량이 같다', async ({ browser, request }, info) => {
-  const p = (await products(request)).find((x: any) => x.in_stock);
+  const p = pickByStock((await products(request)), true);
   const seen: Record<string, unknown> = {};
   for (const lang of LANGS) {
     const page = await (await browser.newContext()).newPage();
@@ -99,7 +101,7 @@ test('[C-I18N-01] 언어를 바꿔도 장바구니 금액과 수량이 같다', 
 });
 
 test('[C-I18N-02] 언어를 바꿔도 품절 상품은 담을 수 없다', async ({ browser, request }, info) => {
-  const p = (await products(request)).find((x: any) => !x.in_stock);
+  const p = pickByStock((await products(request)), false);
   test.skip(!p, '첫 페이지에 품절 상품이 없어 판정할 대상이 없다');
   const seen: Record<string, unknown> = {};
   for (const lang of LANGS) {

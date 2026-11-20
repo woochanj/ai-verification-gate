@@ -24,3 +24,11 @@ test('[C-API-03] 없는 상품 조회는 404를 돌려준다', async ({ request 
   await evidence(info, { status: res.status() });
   expect(res.status()).toBe(404);
 });
+
+test('[C-API-04] 상품 API는 재고 여부만 알리고 재고 수량은 드러내지 않는다', async ({ request }, info) => {
+  const data = (await (await request.get(`${API}/products`)).json()).data;
+  const noInStock = data.filter((p: any) => typeof p.in_stock !== 'boolean').map((p: any) => p.name);
+  const stockExposed = data.filter((p: any) => 'stock' in p).map((p: any) => p.name);
+  await evidence(info, { checked: data.length, noInStock, stockExposed });
+  expect({ noInStock, stockExposed }).toEqual({ noInStock: [], stockExposed: [] });
+});

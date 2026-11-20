@@ -15,6 +15,12 @@ criteria:
     pass: GET /products/search?q=pliers 결과가 1건 이상이고, 모든 상품 이름에 pliers가 들어 있다(대소문자 무시)
     fail: 결과가 0건이거나, 이름에 pliers가 없는 상품이 섞여 있다
     severity: major
+  - id: C-API-04
+    source: API
+    title: 상품 API는 재고 여부만 알리고 재고 수량은 드러내지 않는다
+    pass: GET /products의 모든 상품에 in_stock(true/false)이 있고 stock(재고 수량) 필드는 없다
+    fail: in_stock이 없는 상품이 있거나 stock 필드가 노출된다
+    severity: major
   - id: C-API-03
     source: API
     title: 없는 상품 조회는 404를 돌려준다
@@ -85,8 +91,8 @@ criteria:
   - id: C-EDGE-02
     source: 화면
     title: 검색 결과가 없으면 결과 없음을 알린다
-    pass: 어떤 상품 이름에도 없는 검색어(zzzzqq)로 검색하면 상품 카드가 0개이고 "There are no products found." 문구가 보인다
-    fail: 상품 카드가 보이거나 결과 없음 문구가 없다
+    pass: 어떤 상품 이름에도 없는 검색어(zzzzqq)로 검색하면 상품 카드가 0개이고 "There are no products found." 문구가 보이며, 같은 검색어의 검색 API도 200으로 0건을 돌려준다
+    fail: 상품 카드가 보이거나 결과 없음 문구가 없거나, 검색 API가 실패했는데 화면이 결과 없음으로 보여 준다
     severity: major
   - id: C-EDGE-03
     source: API

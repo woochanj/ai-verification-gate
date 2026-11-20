@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { API, evidence } from './helpers';
+import { API, evidence, pickByStock } from './helpers';
 
 // 예외·경계·권한 기준. 로그인·장바구니·삭제 요청은 Docker로 띄운 Toolshop에만 보낸다.
 const CUSTOMER = { email: 'customer@practicesoftwaretesting.com', password: 'welcome01' };
@@ -10,7 +10,7 @@ const login = (request: APIRequestContext, u: { email: string; password: string 
   request.post(`${API}/users/login`, { data: u });
 
 test('[C-EDGE-01] 상세 화면 수량은 1 아래로 내려가지 않는다', async ({ page, request }, info) => {
-  const p = (await json(await request.get(`${API}/products`))).data.find((x: any) => x.in_stock);
+  const p = pickByStock((await json(await request.get(`${API}/products`))).data, true);
   await page.goto(`/product/${p.id}`);
   const qty = page.getByTestId('quantity');
   await page.getByTestId('increase-quantity').click();
@@ -22,7 +22,7 @@ test('[C-EDGE-01] 상세 화면 수량은 1 아래로 내려가지 않는다', a
   expect([up, down]).toEqual(['3', '1']);
 });
 
-test('[C-EDGE-02] 검색 결과가 없으면 결과 없음을 알린다', async ({ page }, info) => {
+test('[C-EDGE-02] 검색 결과가 없으면 결과 없음을 알린다', async ({ page, request }, info) => {
   await page.goto('/');
   await page.getByTestId('search-query').fill('zzzzqq');
   await page.getByTestId('search-submit').click();
@@ -30,8 +30,11 @@ test('[C-EDGE-02] 검색 결과가 없으면 결과 없음을 알린다', async 
   await message.waitFor({ timeout: 10_000 }).catch(() => {});
   const cards = await page.getByTestId('product-name').count();
   const text = (await message.count()) ? (await message.innerText()).trim() : null;
-  await evidence(info, { query: 'zzzzqq', cards, message: text });
-  expect({ cards, text }).toEqual({ cards: 0, text: 'There are no products found.' });
+  // 화면의 "결과 없음"이 실제로 0건이라서인지, 검색 요청이 실패해서인지 API로 확인한다.
+  const api = await request.get(`${API}/products/search?q=zzzzqq`).then(async r => ({ status: r.status(), total: r.ok() ? (await r.json()).total : null }))
+    .catch((e: Error) => ({ status: null, total: null, error: e.message.split(String.fromCharCode(10))[0] }));
+  await evidence(info, { query: 'zzzzqq', cards, message: text, api });
+  expect({ cards, text, apiStatus: api.status, apiTotal: api.total }).toEqual({ cards: 0, text: 'There are no products found.', apiStatus: 200, apiTotal: 0 });
 });
 
 test('[C-EDGE-03] 가격 범위 필터는 범위 안의 상품만 돌려준다', async ({ request }, info) => {
@@ -56,7 +59,7 @@ test('[C-EDGE-04] 마지막 페이지의 상품 수가 전체 수와 맞다', as
 });
 
 test('[C-EDGE-05] 장바구니에 수량 0·음수를 담을 수 없다', async ({ request }, info) => {
-  const p = (await json(await request.get(`${API}/products`))).data.find((x: any) => x.in_stock);
+  const p = pickByStock((await json(await request.get(`${API}/products`))).data, true);
   const cart = await (await request.post(`${API}/carts`)).json();
   const add = (quantity: number) => request.post(`${API}/carts/${cart.id}`, { data: { product_id: p.id, quantity } });
   const zero = (await add(0)).status();
