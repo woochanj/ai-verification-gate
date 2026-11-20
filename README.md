@@ -80,6 +80,6 @@ npm run verify                 # 테스트 + 게이트
 node scripts/gate-selfcheck.mjs
 ```
 
-대상은 `BASE_URL`, `API_URL` 환경 변수로 바꿀 수 있습니다. CI는 PR, main 푸시, 매주 월요일에 돌고, main 결과는 GitHub Pages 판정 이력에 쌓입니다.
+대상은 `BASE_URL`, `API_URL` 환경 변수로 바꿀 수 있습니다. 로컬 기본값은 공개 사이트이고, CI는 공개 사이트가 CI 서버 접속에 봇 확인 화면을 띄우기 때문에 [toolshop/docker-compose.yml](toolshop/docker-compose.yml)로 Toolshop을 직접 띄워 검증합니다. CI는 PR, main 푸시, 매주 월요일에 돌고, main 결과는 GitHub Pages 판정 이력에 쌓입니다.
 
 AI와 사람이 각각 무엇을 했는지는 [docs/ai-workflow.md](docs/ai-workflow.md)에 적었습니다.
