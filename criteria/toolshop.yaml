@@ -75,3 +75,64 @@ criteria:
     pass: 7개 언어 각각에서 API의 in_stock=false 상품 상세 화면에 품절 표시가 있고 장바구니 버튼이 비활성이다
     fail: 어느 언어에서든 품절 표시가 없거나 장바구니 버튼을 누를 수 있다
     severity: blocker
+  # --- 예외·경계·권한 ---
+  - id: C-EDGE-01
+    source: 화면
+    title: 상세 화면 수량은 1 아래로 내려가지 않는다
+    pass: 수량 1에서 +를 2번 누르면 3이 되고, 이어서 −를 4번 누르면 1에서 멈춘다
+    fail: +를 눌러도 3이 되지 않거나, −로 1보다 작아진다
+    severity: major
+  - id: C-EDGE-02
+    source: 화면
+    title: 검색 결과가 없으면 결과 없음을 알린다
+    pass: 어떤 상품 이름에도 없는 검색어(zzzzqq)로 검색하면 상품 카드가 0개이고 "There are no products found." 문구가 보인다
+    fail: 상품 카드가 보이거나 결과 없음 문구가 없다
+    severity: major
+  - id: C-EDGE-03
+    source: API
+    title: 가격 범위 필터는 범위 안의 상품만 돌려준다
+    pass: GET /products?between=price,10,20 결과가 1건 이상이고 모든 상품 가격이 10 이상 20 이하다
+    fail: 결과가 0건이거나 범위를 벗어난 가격이 있다
+    severity: major
+  - id: C-EDGE-04
+    source: API
+    title: 마지막 페이지의 상품 수가 전체 수와 맞다
+    pass: GET /products?page={last_page}의 상품 수가 total − per_page × (last_page − 1)과 같다
+    fail: 마지막 페이지 상품 수가 계산값과 다르다
+    severity: minor
+  - id: C-EDGE-05
+    source: API
+    title: 장바구니에 수량 0·음수를 담을 수 없다
+    pass: 장바구니에 수량 0과 −1로 상품을 추가하는 요청이 둘 다 4xx로 거부된다
+    fail: 둘 중 하나라도 2xx로 받아들여진다
+    severity: major
+  - id: C-EDGE-06
+    source: 화면
+    title: 로그인 양식은 잘못된 형식을 막는다
+    pass: 이메일 abc, 비밀번호 x로 로그인하면 이메일 형식 오류와 비밀번호 길이 오류가 보이고 로그인 화면에 머문다
+    fail: 오류 문구가 없거나 로그인 화면을 벗어난다
+    severity: major
+  - id: C-EDGE-07
+    source: API
+    title: 비밀번호를 한 번 틀려도 계정이 잠기지 않는다
+    pass: 틀린 비밀번호로 1번 로그인하면 401이고, 이어서 올바른 비밀번호로 로그인하면 토큰을 받는다
+    fail: 틀린 비밀번호가 401이 아니거나, 이후 올바른 비밀번호로 로그인할 수 없다
+    severity: blocker
+  - id: C-EDGE-08
+    source: 화면
+    title: 문의 양식은 필수값이 비면 보내지 않는다
+    pass: 아무것도 입력하지 않고 보내면 이름·성·이메일·제목·내용 5개 필수 오류가 보이고 접수 완료 문구는 없다
+    fail: 필수 오류가 5개보다 적거나 접수 완료 문구가 보인다
+    severity: minor
+  - id: C-SEC-01
+    source: API
+    title: 고객은 자기 송장만 조회한다
+    pass: 고객 토큰으로 GET /invoices를 호출하면 돌아온 모든 송장의 user_id가 그 고객의 id다
+    fail: 다른 고객의 송장이 하나라도 섞여 있다
+    severity: blocker
+  - id: C-SEC-02
+    source: API
+    title: 로그인하지 않으면 상품을 삭제할 수 없다
+    pass: 토큰 없이 DELETE /products/{id}를 호출하면 401 또는 403이고, 그 상품은 계속 조회된다
+    fail: 삭제 요청이 성공하거나 상품이 사라진다
+    severity: blocker

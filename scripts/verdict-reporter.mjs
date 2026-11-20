@@ -25,11 +25,11 @@ export default class VerdictReporter {
     });
   }
 
-  // 영상은 판정 이력 페이지에서 바로 볼 수 있게 out/site/videos/<기준 id>.webm으로 복사한다.
+  // 영상은 판정 이력 페이지에서 바로 볼 수 있게 out/videos/<기준 id>.webm으로 복사한다.
   keepVideo(id, src) {
     if (!src || !fs.existsSync(src)) return null;
-    fs.mkdirSync('out/site/videos', { recursive: true });
-    fs.copyFileSync(src, path.join('out/site/videos', `${id}.webm`));
+    fs.mkdirSync('out/videos', { recursive: true });
+    fs.copyFileSync(src, path.join('out/videos', `${id}.webm`));
     return `videos/${id}.webm`;
   }
 

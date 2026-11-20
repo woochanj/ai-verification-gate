@@ -2,7 +2,7 @@
 //   No-Go: blocker 기준이 실패했거나, 판정되지 않았다(테스트 없음·건너뜀),
 //          또는 코드 판정과 AI 판정(scripts/ai-judge.mjs)이 달라 사람 검토가 필요하다.
 //   Go:    그 밖의 경우. major·minor 실패와 불일치는 위험으로 기록한다.
-// 결과: out/summary.md(PR 요약), out/site/history.json·index.html(판정 이력 페이지). No-Go면 exit 1.
+// 결과: out/summary.md(PR 요약), out/result.json(이력 페이지용). No-Go면 exit 1, EXPECT가 있으면 기대 판정과 다를 때 exit 1.
 import fs from 'node:fs';
 import { parse } from 'yaml';
 
@@ -30,7 +30,7 @@ const aiText = r => !r.ai ? '-'
 const cell = s => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 200);
 const aiModel = run.ai?.model ?? run.ai?.note ?? '없음';
 
-const md = [
+const body = [
   `## 배포 판정: ${decision}`,
   `커밋 ${run.commit} · ${run.runAt} · 기준 ${rows.length}개 중 통과 ${rows.filter(r => r.verdict === 'pass').length}개 · AI 판정: ${aiModel}`,
   blocking.length ? `\n**배포를 막은 기준:** ${blocking.map(r => r.id).join(', ')}` : '',
@@ -40,25 +40,15 @@ const md = [
   ...rows.map(r => `| ${r.id} ${r.title} | ${r.severity} | ${mark[r.verdict]} | ${cell(r.reason ?? JSON.stringify(r.evidence))} | ${cell(aiText(r))} |`),
 ].join('\n');
 
-fs.mkdirSync('out/site', { recursive: true });
+const scenario = process.env.SCENARIO ?? 'local';
+const md = `### 시나리오: ${scenario}\n${body}`;
+fs.mkdirSync('out', { recursive: true });
 fs.writeFileSync('out/summary.md', md);
-
-// 이력: 이전 배포의 history.json이 out/site에 있으면 이어 붙인다(CI가 Pages에서 받아 둔다).
-const histPath = 'out/site/history.json';
-// 영상은 이번 실행 것만 배포되므로 이전 기록의 영상 링크는 지운다.
-const history = (fs.existsSync(histPath) ? JSON.parse(fs.readFileSync(histPath, 'utf8')) : [])
-  .map(h => ({ ...h, rows: h.rows.map(({ video, ...r }) => r) }));
-history.unshift({ runAt: run.runAt, commit: run.commit, decision, aiModel,
-  rows: rows.map(({ id, title, severity, verdict, reason, evidence, ai, review, video }) => ({ id, title, severity, verdict, reason, evidence, ai, review, video })) });
-fs.writeFileSync(histPath, JSON.stringify(history.slice(0, 50), null, 2));
-
-const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-fs.writeFileSync('out/site/index.html', `<!doctype html><meta charset="utf-8"><title>AI Verification Gate</title>
-<style>body{font:14px system-ui;margin:24px;max-width:1200px}table{border-collapse:collapse;width:100%;margin:8px 0 24px}td,th{border:1px solid #ccc;padding:4px 8px;text-align:left;vertical-align:top}
-.Go{color:#1a7f37}.No-Go{color:#cf222e}.fail,.unverified,.not-run{background:#fff1f0}code{font-size:12px;word-break:break-all}</style>
-<h1>판정 이력</h1><p>기준: <code>criteria/*.yaml</code> · 최근 ${history.length}회 · 코드 판정과 AI 판정이 다르면 "검토 필요"</p>
-${history.map(h => `<h2 class="${h.decision}">${h.decision} · ${esc(h.commit)} · ${esc(h.runAt)}</h2><p>AI 판정: ${esc(h.aiModel ?? '없음')}</p>
-<table><tr><th>기준</th><th>심각도</th><th>코드 판정</th><th>근거</th><th>AI 판정</th></tr>${h.rows.map(r => `<tr class="${r.review ? 'fail' : r.verdict}"><td>${esc(r.id)} ${esc(r.title)}${r.video ? ` <a href="${esc(r.video)}">영상</a>` : ''}</td><td>${r.severity}</td><td>${mark[r.verdict]}</td><td><code>${esc(r.reason ?? JSON.stringify(r.evidence))}</code></td><td>${esc(aiText(r))}</td></tr>`).join('')}</table>`).join('')}`);
+// 판정 이력 페이지(scripts/site.mjs)가 시나리오별 결과를 모아 그린다.
+fs.writeFileSync('out/result.json', JSON.stringify({ scenario, runAt: run.runAt, commit: run.commit, decision, aiModel,
+  rows: rows.map(({ id, title, severity, verdict, reason, evidence, ai, review, video }) => ({ id, title, severity, verdict, reason, evidence, ai, review, video })) }, null, 2));
 
 console.log(md);
-process.exit(decision === 'Go' ? 0 : 1);
+// EXPECT가 있으면 "기대한 판정이 나왔는가"로 성공을 정한다(결함 주입 빌드는 No-Go가 나와야 정상).
+const ok = process.env.EXPECT ? decision === process.env.EXPECT : decision === 'Go';
+process.exit(ok ? 0 : 1);
