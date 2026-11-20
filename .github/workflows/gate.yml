@@ -24,6 +24,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/gate-selfcheck.mjs
 
+      - uses: docker/setup-qemu-action@v3 # Toolshop web 이미지가 arm64 전용이라 amd64 러너에서 에뮬레이션 필요
+
       - name: Toolshop 띄우기
         env: { SPRINT: sprint5, DISABLE_LOGGING: 'true' }
         run: |
