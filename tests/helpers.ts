@@ -1,6 +1,6 @@
 import type { TestInfo } from '@playwright/test';
 
-export const API = process.env.API_URL ?? 'https://api.practicesoftwaretesting.com';
+export const API = process.env.API_URL ?? 'http://127.0.0.1:8091';
 
 // 판정 근거: 기준을 판정할 때 실제로 본 값을 남긴다. 리포터가 verdicts.json에 그대로 싣는다.
 export const evidence = (info: TestInfo, data: unknown) =>

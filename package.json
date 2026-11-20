@@ -5,7 +5,9 @@
   "scripts": {
     "test": "playwright test",
     "gate": "node scripts/gate.mjs",
-    "verify": "playwright test; node scripts/gate.mjs"
+    "verify": "playwright test; node scripts/gate.mjs",
+    "toolshop:up": "cd toolshop && docker compose up -d && docker compose exec -T laravel-api php artisan migrate:fresh --seed --force && docker compose exec -T laravel-api php artisan cache:clear",
+    "toolshop:down": "cd toolshop && docker compose down -v"
   },
   "author": "",
   "license": "ISC",

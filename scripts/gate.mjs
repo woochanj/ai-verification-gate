@@ -16,7 +16,7 @@ const rows = criteria.map(c => {
   const ai = r?.ai ?? null;
   // AI가 통과·실패로 판단했는데 코드 판정과 다르면 사람이 근거를 보고 정해야 한다. 판단 불가면 코드 판정을 따른다.
   const review = !!ai && ['pass', 'fail'].includes(ai.verdict) && ai.verdict !== r.verdict;
-  return { ...c, verdict: r?.verdict ?? 'unverified', reason: r?.reason ?? (r ? null : '이 기준을 판정하는 테스트가 없다'), evidence: r?.evidence ?? null, ai, review };
+  return { ...c, video: r?.video ?? null, verdict: r?.verdict ?? 'unverified', reason: r?.reason ?? (r ? null : '이 기준을 판정하는 테스트가 없다'), evidence: r?.evidence ?? null, ai, review };
 });
 const bad = r => r.verdict !== 'pass' || r.review;
 const blocking = rows.filter(r => r.severity === 'blocker' && bad(r));
@@ -45,9 +45,11 @@ fs.writeFileSync('out/summary.md', md);
 
 // 이력: 이전 배포의 history.json이 out/site에 있으면 이어 붙인다(CI가 Pages에서 받아 둔다).
 const histPath = 'out/site/history.json';
-const history = fs.existsSync(histPath) ? JSON.parse(fs.readFileSync(histPath, 'utf8')) : [];
+// 영상은 이번 실행 것만 배포되므로 이전 기록의 영상 링크는 지운다.
+const history = (fs.existsSync(histPath) ? JSON.parse(fs.readFileSync(histPath, 'utf8')) : [])
+  .map(h => ({ ...h, rows: h.rows.map(({ video, ...r }) => r) }));
 history.unshift({ runAt: run.runAt, commit: run.commit, decision, aiModel,
-  rows: rows.map(({ id, title, severity, verdict, reason, evidence, ai, review }) => ({ id, title, severity, verdict, reason, evidence, ai, review })) });
+  rows: rows.map(({ id, title, severity, verdict, reason, evidence, ai, review, video }) => ({ id, title, severity, verdict, reason, evidence, ai, review, video })) });
 fs.writeFileSync(histPath, JSON.stringify(history.slice(0, 50), null, 2));
 
 const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -56,7 +58,7 @@ fs.writeFileSync('out/site/index.html', `<!doctype html><meta charset="utf-8"><t
 .Go{color:#1a7f37}.No-Go{color:#cf222e}.fail,.unverified,.not-run{background:#fff1f0}code{font-size:12px;word-break:break-all}</style>
 <h1>판정 이력</h1><p>기준: <code>criteria/*.yaml</code> · 최근 ${history.length}회 · 코드 판정과 AI 판정이 다르면 "검토 필요"</p>
 ${history.map(h => `<h2 class="${h.decision}">${h.decision} · ${esc(h.commit)} · ${esc(h.runAt)}</h2><p>AI 판정: ${esc(h.aiModel ?? '없음')}</p>
-<table><tr><th>기준</th><th>심각도</th><th>코드 판정</th><th>근거</th><th>AI 판정</th></tr>${h.rows.map(r => `<tr class="${r.review ? 'fail' : r.verdict}"><td>${esc(r.id)} ${esc(r.title)}</td><td>${r.severity}</td><td>${mark[r.verdict]}</td><td><code>${esc(r.reason ?? JSON.stringify(r.evidence))}</code></td><td>${esc(aiText(r))}</td></tr>`).join('')}</table>`).join('')}`);
+<table><tr><th>기준</th><th>심각도</th><th>코드 판정</th><th>근거</th><th>AI 판정</th></tr>${h.rows.map(r => `<tr class="${r.review ? 'fail' : r.verdict}"><td>${esc(r.id)} ${esc(r.title)}${r.video ? ` <a href="${esc(r.video)}">영상</a>` : ''}</td><td>${r.severity}</td><td>${mark[r.verdict]}</td><td><code>${esc(r.reason ?? JSON.stringify(r.evidence))}</code></td><td>${esc(aiText(r))}</td></tr>`).join('')}</table>`).join('')}`);
 
 console.log(md);
 process.exit(decision === 'Go' ? 0 : 1);

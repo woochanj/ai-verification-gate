@@ -57,3 +57,21 @@ criteria:
     pass: 정렬을 Price (Low - High)로 바꾸면 첫 페이지 가격이 낮은 가격부터 이어진다
     fail: 앞 상품보다 싼 상품이 뒤에 나온다
     severity: minor
+  - id: C-FLOW-01
+    source: 요구사항+화면+API
+    title: 로그인 고객의 주문 금액이 장바구니와 송장에서 같다
+    pass: 로그인한 고객이 재고 있는 상품 A 2개, B 1개를 주문하면 주문 완료 화면에 송장 번호가 나오고, 장바구니 합계와 단가×수량 합과 송장 API의 total이 모두 같으며, 송장 줄의 상품별 수량·단가가 장바구니와 같다
+    fail: 송장 번호가 없거나, 세 금액 중 하나라도 다르거나, 송장 줄의 수량·단가가 장바구니와 다르다
+    severity: blocker
+  - id: C-I18N-01
+    source: 화면
+    title: 언어를 바꿔도 장바구니 금액과 수량이 같다
+    pass: 7개 언어(de, el, en, es, fr, nl, tr) 각각에서 언어 선택기에 그 언어 코드가 보이고, 같은 상품 1개를 담은 장바구니의 배지 수량·줄 금액·합계가 영어와 같다
+    fail: 언어 코드가 바뀌지 않거나, 어느 언어에서든 배지 수량·줄 금액·합계가 영어와 다르다
+    severity: blocker
+  - id: C-I18N-02
+    source: 화면+API
+    title: 언어를 바꿔도 품절 상품은 담을 수 없다
+    pass: 7개 언어 각각에서 API의 in_stock=false 상품 상세 화면에 품절 표시가 있고 장바구니 버튼이 비활성이다
+    fail: 어느 언어에서든 품절 표시가 없거나 장바구니 버튼을 누를 수 있다
+    severity: blocker

@@ -2,7 +2,7 @@
 
 요구사항·화면·API를 **AI가 판정할 수 있는 검증 기준**으로 바꾸고, AI 에이전트가 그 기준을 테스트로 옮겨 실행하고, **판정 근거를 기록**한 뒤, 그 근거로 **배포 여부(Go/No-Go)를 정하는** 흐름을 작게 재현한 저장소입니다.
 
-대상은 공개 테스트 연습 사이트 [Toolshop](https://practicesoftwaretesting.com)과 그 [REST API](https://api.practicesoftwaretesting.com/api/documentation)입니다.
+대상은 테스트 연습용 쇼핑몰 [Toolshop](https://practicesoftwaretesting.com)입니다. 공식 저장소의 Docker 이미지로 직접 띄워 검증합니다(화면 + [REST API](https://api.practicesoftwaretesting.com/api/documentation) + DB).
 
 ```
 criteria/*.yaml        검증 기준: 무엇이 통과이고 무엇이 실패인지, 심각도
@@ -31,7 +31,15 @@ PR 요약 + 판정 이력 페이지(GitHub Pages)
   severity: blocker
 ```
 
-현재 기준 9개: API 3개, 화면 6개(그중 4개는 화면 값과 API 값을 대조). 전체는 [criteria/toolshop.yaml](criteria/toolshop.yaml).
+현재 기준 12개. 전체는 [criteria/toolshop.yaml](criteria/toolshop.yaml).
+
+| 종류 | 기준 |
+|---|---|
+| API | 상품 목록, 검색, 없는 상품 404 |
+| 화면+API 정합성 | 검색 결과, 목록 가격, 상세 가격, 품절 처리가 API와 같은지 |
+| 화면 | 장바구니 수량·금액, 가격 정렬 |
+| 주문 전체 흐름 | 로그인 → 상품 2종(수량 2·1) 담기 → 주소 → 결제 → 송장 발급. 장바구니 합계 = 단가×수량 합 = 송장 API 금액, 송장 줄의 수량·단가 = 장바구니 |
+| 다국어 | 7개 언어에서 장바구니 금액·수량이 영어와 같은지, 품절 상품을 담을 수 없는지 |
 
 ## 판정 근거
 
@@ -92,10 +100,16 @@ PR 요약 + 판정 이력 페이지(GitHub Pages)
 ```bash
 npm ci
 npx playwright install chromium
+npm run toolshop:up            # Docker로 Toolshop 띄우고 DB 초기화
 npm run verify                 # 테스트 + 게이트
-node scripts/gate-selfcheck.mjs
+npx playwright test --ui       # 브라우저 동작을 화면으로 보며 실행
+npm run toolshop:down
 ```
 
-대상은 `BASE_URL`, `API_URL` 환경 변수로 바꿀 수 있습니다. 로컬 기본값은 공개 사이트이고, CI는 공개 사이트가 CI 서버 접속에 봇 확인 화면을 띄우기 때문에 [toolshop/docker-compose.yml](toolshop/docker-compose.yml)로 Toolshop을 직접 띄워 검증합니다. CI는 PR, main 푸시, 매주 월요일에 돌고, main 결과는 GitHub Pages 판정 이력에 쌓입니다.
+Toolshop은 [toolshop/docker-compose.yml](toolshop/docker-compose.yml)(공식 저장소 사본)로 띄웁니다. 공개 사이트는 CI 서버 접속에 봇 확인 화면을 띄우고, 공개 사이트에 주문을 만들 수도 없어서 직접 띄운 인스턴스를 씁니다. 매번 DB를 초기화하므로 다른 사람이 데이터를 바꿔 결과가 흔들리는 일이 없습니다. 주문 테스트는 Toolshop 공식 시드의 테스트 계정을 씁니다.
+
+화면 기준은 실행 장면을 영상으로 남기고, 판정 이력 페이지의 "영상" 링크로 볼 수 있습니다.
+
+CI는 PR, main 푸시, 매주 월요일에 돌고, main 결과는 GitHub Pages 판정 이력에 쌓입니다.
 
 AI와 사람이 각각 무엇을 했는지는 [docs/ai-workflow.md](docs/ai-workflow.md)에 적었습니다.
