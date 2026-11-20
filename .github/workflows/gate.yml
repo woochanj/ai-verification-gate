@@ -30,6 +30,8 @@ jobs:
           docker compose -f toolshop/docker-compose.yml up -d --pull missing
           for i in $(seq 60); do docker compose -f toolshop/docker-compose.yml exec -T laravel-api php artisan migrate:fresh --seed --force && break; sleep 5; done
           for i in $(seq 60); do curl -sf http://127.0.0.1:8091/products >/dev/null && curl -sf http://127.0.0.1:4200 >/dev/null && break; sleep 5; done
+          docker compose -f toolshop/docker-compose.yml ps -a
+          docker compose -f toolshop/docker-compose.yml logs --tail 30 web laravel-api
           curl -sf http://127.0.0.1:8091/products | head -c 300
 
       - name: 기준 판정 실행
